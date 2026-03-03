@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>결제 단말기 시뮬레이터</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 50px; text-align: center; background-color: #f4f7f6; color: #333; }
+        .container { background: white; padding: 30px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 350px; }
+        h2 { margin-bottom: 25px; color: #1a1a1a; }
+        .input-group { text-align: left; margin-bottom: 15px; }
+        label { font-size: 0.85em; color: #666; margin-left: 5px; }
+        input { padding: 12px; margin-top: 5px; width: calc(100% - 26px); border: 1px solid #ddd; border-radius: 6px; display: block; font-size: 1em; }
+        button { padding: 15px; background: #0046ff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; transition: 0.2s; }
+        button:hover { background: #0035c1; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        
+        /* 결과 박스 스타일 */
+        #result { margin-top: 25px; padding: 20px; border-radius: 8px; min-height: 40px; font-size: 0.95em; line-height: 1.6; display: none; border: 1px solid transparent; }
+        .status-msg { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; display: block; }
+        
+        /* 성공/실패 상태 디자인 */
+        .approved { display: block !important; background-color: #e7f3ff; color: #0046ff; border-color: #b3d7ff; }
+        .rejected { display: block !important; background-color: #fff0f0; color: #ff4d4d; border-color: #ffcccc; }
+        .pending { display: block !important; background-color: #f9f9f9; color: #666; border-color: #ddd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>💳 결제 단말기</h2>
+        
+        <div class="input-group">
+            <label>계좌번호</label>
+            <input id="acc" placeholder="110-123-456789" value="110-123-456789">
+        </div>
+        
+        <div class="input-group">
+            <label>결제 금액 (원)</label>
+            <input id="amt" type="number" placeholder="5000" value="5000">
+        </div>
+        
+        <div class="input-group">
+            <label>가맹점명</label>
+            <input id="mct" placeholder="스타벅스" value="스타벅스">
+        </div>
+
+        <button id="payBtn" onclick="pay()">결제 승인 요청</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        async function pay() {
+            const btn = document.getElementById('payBtn');
+            const resultTag = document.getElementById('result');
+            
+            // 초기화
+            btn.disabled = true;
+            resultTag.className = 'pending';
+            resultTag.innerHTML = '<span class="status-msg">⏳ 통신 중</span>은행 서버에 승인을 요청하고 있습니다...';
+            
+            try {
+                const res = await fetch('/api/v1/app/payments/send', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        accountNumber: document.getElementById('acc').value,
+                        amount: document.getElementById('amt').value,
+                        merchantName: document.getElementById('mct').value,
+                        category: 'CAFE'
+                    })
+                });
+
+                // JSON 파싱
+                const data = await res.json();
+
+                if (data.status === 'APPROVED') {
+                    // 성공 케이스
+                    resultTag.className = 'approved';
+                    resultTag.innerHTML = `
+                        <span class="status-msg">✅ 결제 승인</span>
+                        <b>승인번호:</b> ${data.approvalNo}<br>
+                        <b>결과:</b> ${data.message}
+                    `;
+                } else {
+                    // 실패 케이스 (잔액 부족 등)
+                    resultTag.className = 'rejected';
+                    resultTag.innerHTML = `
+                        <span class="status-msg">❌ 결제 거절</span>
+                        <b>사유:</b> ${data.message}
+                    `;
+                }
+
+            } catch (e) {
+                // 시스템 오류 (서버 꺼짐 등)
+                resultTag.className = 'rejected';
+                resultTag.innerHTML = `
+                    <span class="status-msg">⚠️ 시스템 오류</span>
+                    통신에 실패했습니다. (서버 상태 확인 필요)
+                `;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
