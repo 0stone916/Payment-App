@@ -37,7 +37,7 @@
         
         <div class="input-group">
             <label>결제 금액 (원)</label>
-            <input id="amt" type="number" placeholder="5000" value="5000">
+            <input id="amt" type="number" placeholder="1000" value="1000">
         </div>
         
         <div class="input-group">
@@ -80,7 +80,6 @@
                     resultTag.className = 'approved';
                     resultTag.innerHTML = `
                         <span class="status-msg">✅ 결제 승인</span>
-                        <b>승인번호:</b> ${data.approvalNo}<br>
                         <b>결과:</b> ${data.message}
                     `;
                 } else {
