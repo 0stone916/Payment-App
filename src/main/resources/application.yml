@@ -1,5 +1,11 @@
 server:
   port: 8083
 
+spring:
+  http:
+    client:
+      connect-timeout: 2s   # TCP 연결 대기 
+      read-timeout: 5s      # 응답 대기 
+
 bank:
   url: http://localhost:8081
